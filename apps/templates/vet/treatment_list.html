@@ -1,0 +1,33 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Treatments</h2>
+    <a href="{% url 'add_treatment' %}" class="btn btn-primary mb-3">+ Add Treatment</a>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Livestock</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Medication</th>
+                <th>Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for treatment in treatments %}
+            <tr>
+                <td>{{ treatment.livestock.name }}</td>
+                <td>{{ treatment.treatment_date }}</td>
+                <td>{{ treatment.description }}</td>
+                <td>{{ treatment.medication|default:"N/A" }}</td>
+                <td>{{ treatment.cost|default:"0.00" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No treatments recorded yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

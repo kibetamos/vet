@@ -1,0 +1,33 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<h2>Vaccination Records</h2>
+<a href="{% url 'vaccination_create' %}" class="btn btn-primary">Add Vaccination</a>
+<table class="table mt-3">
+    <thead>
+        <tr>
+            <th>Livestock</th>
+            <th>Vaccine Name</th>
+            <th>Date</th>
+            <th>Next Due</th>
+            <th>Vet</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in vaccinations %}
+        <tr>
+            <td>{{ v.livestock.name }}</td>
+            <td>{{ v.vaccine_name }}</td>
+            <td>{{ v.vaccination_date }}</td>
+            <td>{{ v.next_due_date|default:"-" }}</td>
+            <td>{{ v.vet.username }}</td>
+            <td>{{ v.notes|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">No vaccinations recorded.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

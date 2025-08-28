@@ -1,0 +1,63 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-xl-12">
+      <div class="card shadow">
+        <div class="card-header border-0">
+          <h3 class="mb-0">My Livestock</h3>
+        </div>
+        <div class="table-responsive">
+          <!-- Livestock Table -->
+          <table class="table align-items-center table-flush">
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Breed</th>
+                <th scope="col">Date of Birth</th>
+                <th scope="col">Weight (kg)</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if livestock %}
+                {% for animal in livestock %}
+                <tr>
+                  <th scope="row">{{ animal.name }}</th>
+                  <td>{{ animal.livestock_type|title }}</td>
+                  <td>{{ animal.breed|default:"-" }}</td>
+                  <td>
+                    {% if animal.date_of_birth %}
+                      {{ animal.date_of_birth }}
+                    {% else %}
+                      <span class="text-muted">N/A</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if animal.weight %}
+                      {{ animal.weight }}
+                    {% else %}
+                      <span class="text-muted">N/A</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ animal.notes|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted">
+                    No livestock found.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
