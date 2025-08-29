@@ -1,8 +1,5 @@
-# -*- encoding: utf-8 -*-
-"""
-Copyright (c) 2019 - present AppSeed.us
-"""
 
+from django.http import Http404
 from django.contrib import messages
 from django.utils import timezone
 from django import template
@@ -11,13 +8,19 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404, redirect
-
+from apps.home.models import Vaccination, Treatment, Appointment
+from django.views.generic import ListView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from apps.home.forms import VaccinationForm
 from apps.home.models import *
+from .forms import *
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from apps.home.models import *
+from django.db.models import Count
 
-
-@login_required(login_url="/login/")
+# @login_required(login_url="/login/")
 # def index(request):
 #     context = {'segment': 'index'}
 
@@ -25,7 +28,7 @@ from apps.home.models import *
 #     return HttpResponse(html_template.render(context, request))
 
 
-# @login_required(login_url="/login/")
+@login_required(login_url="/login/")
 def index(request):
     user_role = getattr(request.user, "role", None)
 
@@ -80,6 +83,105 @@ def admin_dashboard(request):
     # return render(request, "admin/admin_dashboard.html")
     return render(request, "home/index.html")
 
+
+class AppointmentListView(LoginRequiredMixin, ListView):
+    model = Appointment
+    template_name = "vet/appointments.html"
+    context_object_name = "appointments"
+    ordering = ['-date']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Check if user is a vet or has staff permissions
+        if self.request.user.is_staff or getattr(self.request.user, "role", "") == "vet":
+            return queryset  # Show all appointments
+        
+        # Otherwise, filter for farmer appointments only
+        return queryset.filter(farmer=self.request.user)
+
+
+# class AppointmentCreateView(LoginRequiredMixin, CreateView):
+#     model = Appointment
+#     form_class = AppointmentForm
+#     template_name = "vet/appointment_form.html"
+#     success_url = reverse_lazy("appointments")
+class AppointmentCreateView(LoginRequiredMixin, CreateView):
+    model = Appointment
+    form_class = AppointmentForm
+    template_name = "vet/appointment_form.html"
+    success_url = reverse_lazy("appointments")
+
+    def get_form_kwargs(self):
+        """Pass the current user to the form so we can filter livestock."""
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
+
+        # If the logged-in user is a farmer, hide farmer field & prefill it
+        if getattr(self.request.user, "role", "") == "farmer":
+            form.fields["farmer"].widget = forms.HiddenInput()
+            form.fields["farmer"].initial = self.request.user
+
+        return form
+
+    def form_valid(self, form):
+        """Ensure farmer is set automatically for farmers."""
+        if getattr(self.request.user, "role", "") == "farmer":
+            form.instance.farmer = self.request.user
+        return super().form_valid(form)
+
+    def form_valid(self, form):
+        # For farmers, force the logged-in user as the farmer
+        if getattr(self.request.user, "role", "") == "farmer":
+            form.instance.farmer = self.request.user
+        return super().form_valid(form)
+
+class AppointmentUpdateView(LoginRequiredMixin, UpdateView):
+    model = Appointment
+    form_class = AppointmentForm
+    template_name = "vet/appointment_form.html"
+    success_url = reverse_lazy("appointments")
+
+    def get_object(self, queryset=None):
+        """Restrict farmers to editing only their own appointments."""
+        obj = super().get_object(queryset)
+        if getattr(self.request.user, "role", "") == "farmer" and obj.farmer != self.request.user:
+            raise Http404("You are not allowed to edit this appointment.")
+        return obj
+
+    def get_form_kwargs(self):
+        """Pass current user to the form to filter livestock."""
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
+
+        # If farmer is editing, hide farmer field and lock it to their account
+        if getattr(self.request.user, "role", "") == "farmer":
+            form.fields["farmer"].widget = forms.HiddenInput()
+            form.fields["farmer"].initial = self.request.user
+
+        return form
+
+class AppointmentDeleteView(LoginRequiredMixin, DeleteView):
+    model = Appointment
+    template_name = "vet/appointment_confirm_delete.html"
+    success_url = reverse_lazy("appointments")
+
+    def get_object(self, queryset=None):
+        """Restrict farmers from deleting other farmers' appointments."""
+        obj = super().get_object(queryset)
+        if getattr(self.request.user, "role", "") == "farmer" and obj.farmer != self.request.user:
+            raise Http404("You are not allowed to delete this appointment.")
+        return obj
+
+
 # Staff Dashboard View
 @login_required(login_url="/login/")
 def staff_dashboard(request):
@@ -111,47 +213,207 @@ def staff_dashboard(request):
 
 #     return render(request,  "farmer/farmer_dashboard.html", {'total_livestock': total_livestock})
 
+
+from django.utils.timezone import now
+
 @login_required(login_url="/login/")
 def farmer_dashboard(request):
     user = request.user
 
-    # Base queryset depending on the user role
-    if user.is_staff:  # Admin sees all livestock
+    # Determine which livestock to show based on role
+    if user.role == 'admin':
         livestock_qs = Livestock.objects.all()
-    elif user.role == 'vet':  # Vet sees livestock assigned to them (if implemented)
-        # If you have no assigned_vet field, vets see all livestock for now
+    elif user.role == 'vet':
         livestock_qs = Livestock.objects.all()
-    else:  # Farmer sees only their livestock
+    elif user.role == 'farmer':
         livestock_qs = Livestock.objects.filter(farmer=user)
+    else:
+        return render(request, "home/page-403.html")
 
-    # Counts by livestock type (use the actual DB field: livestock_type)
-    total_livestock = livestock_qs.count()
-    total_cattle = livestock_qs.filter(livestock_type="cattle").count()
-    total_sheep = livestock_qs.filter(livestock_type="sheep").count()
-    total_goats = livestock_qs.filter(livestock_type="goat").count()
-    total_poultry = livestock_qs.filter(livestock_type="poultry").count()
-    total_other = livestock_qs.filter(livestock_type="other").count()
-
+    # Count livestock types
+    # livestock_counts = livestock_qs.values("livestock_type").annotate(total=Count("id"))
+    cattle_list = livestock_qs.filter(livestock_type='cattle')
+    livestock_counts = (livestock_qs.values("livestock_type").annotate(total=Count("id")))
+    
+    recent_vaccinations = Vaccination.objects.filter(
+            livestock__farmer=user
+        ).order_by("-vaccination_date")[:5]
+    # Prepare health status per animal
+    livestock_list = []
+    for animal in livestock_qs:
+        due_vaccinations = animal.vaccination_set.filter(next_due_date__lte=now()).exists()
+        livestock_list.append({
+            "name": animal.name,
+            "type": animal.livestock_type,
+            "weight": animal.weight,
+            "breed": animal.breed,
+            "health_status": "Vaccination due" if due_vaccinations else "Healthy",
+        })
+        
+    recent_treatments = Treatment.objects.filter(
+        livestock__farmer=user
+    ).order_by("-treatment_date")[:5]
     context = {
-        "total_livestock": total_livestock,
-        "total_cattle": total_cattle,
-        "total_sheep": total_sheep,
-        "total_goats": total_goats,
-        "total_poultry": total_poultry,
-        "total_other": total_other,
+        # "total_livestock": livestock_qs.count(),
+        
+        "cattle_list": cattle_list,
+        "total_livestock": livestock_qs.count(),
+        "total_cattle": next((x["total"] for x in livestock_counts if x["livestock_type"] == "cattle"), 0),
+        "total_sheep": next((x["total"] for x in livestock_counts if x["livestock_type"] == "sheep"), 0),
+        "total_goats": next((x["total"] for x in livestock_counts if x["livestock_type"] == "goat"), 0),
+        "total_poultry": next((x["total"] for x in livestock_counts if x["livestock_type"] == "poultry"), 0),
+        "total_other": next((x["total"] for x in livestock_counts if x["livestock_type"] == "other"), 0),
+        "livestock_list": livestock_list,
+        "recent_vaccinations": recent_vaccinations,
+        "recent_treatments":recent_treatments,
     }
 
     return render(request, "farmer/farmer_dashboard.html", context)
 
+
+class FarmerTreatmentListView(LoginRequiredMixin, ListView):
+    model = Treatment
+    template_name = 'farmer/farmer_treatment_list.html'  # Create this template
+    context_object_name = 'treatments'
+
+    def get_queryset(self):
+        # Only show treatments for livestock that belongs to the logged-in farmer
+        return Treatment.objects.filter(livestock__farmer=self.request.user).order_by('-treatment_date')
+
+
+# @login_required(login_url="/login/")
+# def farmer_dashboard(request):
+#     user = request.user
+
+#     # Determine which livestock to show based on role
+#     if user.role == 'admin':
+#         livestock_qs = Livestock.objects.all()
+#     elif user.role == 'vet':
+#         # If you later add an assigned_vet field, replace this
+#         livestock_qs = Livestock.objects.all()
+#     elif user.role == 'farmer':
+#         livestock_qs = Livestock.objects.filter(farmer=user)
+#     else:
+#         # Unknown role → deny access
+#         return render(request, "home/page-403.html")
+
+#     # Get counts efficiently in one DB query
+#     livestock_counts = (livestock_qs.values("livestock_type").annotate(total=Count("id")))
+#     recent_vaccinations = Vaccination.objects.filter(
+#             livestock__farmer=user
+#         ).order_by("-vaccination_date")[:5]
+#     # Prepare context
+#     context = {
+#         "total_livestock": livestock_qs.count(),
+#         "total_cattle": next((x["total"] for x in livestock_counts if x["livestock_type"] == "cattle"), 0),
+#         "total_sheep": next((x["total"] for x in livestock_counts if x["livestock_type"] == "sheep"), 0),
+#         "total_goats": next((x["total"] for x in livestock_counts if x["livestock_type"] == "goat"), 0),
+#         "total_poultry": next((x["total"] for x in livestock_counts if x["livestock_type"] == "poultry"), 0),
+#         "total_other": next((x["total"] for x in livestock_counts if x["livestock_type"] == "other"), 0),
+#         "recent_vaccinations": recent_vaccinations,
+#     }
+
+#     return render(request, "farmer/farmer_dashboard.html", context)
+# //livestock
 @login_required
 def livestock_list(request):
-    if request.user.is_authenticated:
-        # Show only the livestock belonging to the logged-in farmer
-        livestock = Livestock.objects.filter(farmer=request.user)
+    user = request.user
+
+    # Determine which livestock to show based on role
+    if user.role in ['admin', 'vet']:
+        livestock = Livestock.objects.all()
+    elif user.role == 'farmer':
+        livestock = Livestock.objects.filter(farmer=user)
     else:
-        livestock = Livestock.objects.none()
-    
-    return render(request, 'farmer/livestock.html', {'livestock': livestock})
+        livestock = Livestock.objects.none()  # no access for other roles
+
+    if request.method == "POST":
+        form = LivestockForm(request.POST)
+        if form.is_valid():
+            livestock_instance = form.save(commit=False)
+            
+            # Only set farmer automatically if user is a farmer
+            if user.role == 'farmer':
+                livestock_instance.farmer = user
+            
+            livestock_instance.save()
+            messages.success(request, "Livestock added successfully!")
+            return redirect('livestock_list')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = LivestockForm()
+
+    return render(request, 'farmer/livestock.html', {
+        'livestock': livestock,
+        'form': form,
+    })
+
+@login_required
+def vet_livestock_list(request):
+    user = request.user
+
+    # Determine which livestock to show based on role
+    if user.role in ['admin', 'vet']:
+        livestock = Livestock.objects.all()
+    elif user.role == 'farmer':
+        livestock = Livestock.objects.filter(farmer=user)
+    else:
+        livestock = Livestock.objects.none()  # no access for other roles
+
+    if request.method == "POST":
+        form = LivestockForm(request.POST)
+        if form.is_valid():
+            livestock_instance = form.save(commit=False)
+            
+            # Only set farmer automatically if user is a farmer
+            if user.role == 'farmer':
+                livestock_instance.farmer = user
+            
+            livestock_instance.save()
+            messages.success(request, "Livestock added successfully!")
+            return redirect('livestock_list')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = LivestockForm()
+
+    return render(request, 'vet/livestock.html', {
+        'livestock': livestock,
+        'form': form,
+    })
+
+@login_required
+def livestock_edit(request, pk):
+    livestock_instance = get_object_or_404(Livestock, pk=pk, farmer=request.user)
+
+    if request.method == "POST":
+        form = LivestockForm(request.POST, instance=livestock_instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Livestock updated successfully!")
+            return redirect('livestock_list')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = LivestockForm(instance=livestock_instance)
+
+    return render(request, 'farmer/livestock_edit.html', {'form': form})
+
+
+@login_required
+def livestock_delete(request, pk):
+    livestock_instance = get_object_or_404(Livestock, pk=pk, farmer=request.user)
+
+    if request.method == "POST":
+        livestock_instance.delete()
+        messages.success(request, "Livestock deleted successfully!")
+        return redirect('livestock_list')
+
+    return render(request, 'farmer/livestock_delete.html', {'livestock': livestock_instance})
+
+
+
 
 def vaccination_list(request):
     user = request.user
@@ -174,35 +436,86 @@ def vaccination_list(request):
     return render(request, "farmer/vaccination_list.html", {"vaccinations": vaccinations})
 
 
+# @login_required
+# def vet_dashboard(request):
+#     # Get total vaccinations administered by the logged-in vet
+#     total_vaccinations = Vaccination.objects.filter(vet=request.user).count()
+#     total_treatments = Treatment.objects.filter(vet=request.user).count()
+#     # total_appointments = Appointment.objects.filter(vet=request.user).count()
+
+#     # Get upcoming vaccinations due in the next 7 days
+#     upcoming_vaccinations = Vaccination.objects.filter(
+#         vet=request.user,
+#         next_due_date__gte=timezone.now(),
+#         next_due_date__lte=timezone.now() + timezone.timedelta(days=7)
+#     ).order_by("next_due_date")
+
+#     # Get total livestock handled by this vet
+#     total_livestock = Livestock.objects.filter(vaccination__vet=request.user).distinct().count()
+
+#     context = {
+#         "total_vaccinations": total_vaccinations,
+#         "total_treatments": total_treatments,
+#         # "total_appointments": total_appointments,
+#         "upcoming_vaccinations": upcoming_vaccinations,
+#         "total_livestock": total_livestock,
+#     }
+
+#     return render(request, "vet/vet_dashboard.html", context)
+
 @login_required(login_url="/login/")
 def vet_dashboard(request):
-    # Get total vaccinations administered by the logged-in vet
-    total_vaccinations = Vaccination.objects.filter(vet=request.user).count()
-    treatment = Treatment.objects.filter(vet=request.user).count()
+    user = request.user
 
-    # Get upcoming vaccinations due in the next 7 days
-    upcoming_vaccinations = Vaccination.objects.filter(
-        vet=request.user,
-        next_due_date__gte=timezone.now(),
-        next_due_date__lte=timezone.now() + timezone.timedelta(days=7)
-    ).order_by("next_due_date")
+    if user.role != "vet":
+        return render(request, "home/page-403.html")
 
-    # Get total livestock handled by this vet
-    total_livestock = Livestock.objects.filter(vaccination__vet=request.user).distinct().count()
+    # Show all livestock
+    livestock_qs = Livestock.objects.all()
+
+    # Count livestock types
+    livestock_counts = livestock_qs.values("livestock_type").annotate(total=Count("id"))
+
+    # Total stats
+    total_vaccinations = Vaccination.objects.count()
+    total_treatments = Treatment.objects.count()
+    total_appointments = Appointment.objects.count()
+
+    # Prepare health status for all livestock
+    livestock_list = []
+    for animal in livestock_qs:
+        due_vaccinations = animal.vaccination_set.filter(next_due_date__lte=now()).exists()
+        livestock_list.append({
+            "name": animal.name,
+            "type": animal.livestock_type,
+            "weight": animal.weight,
+            "breed": animal.breed,
+            "health_status": "Vaccination due" if due_vaccinations else "Healthy",
+        })
+
+    recent_vaccinations = Vaccination.objects.all().order_by("-vaccination_date")[:5]
+    recent_treatments = Treatment.objects.all().order_by("-treatment_date")[:5]
+    recent_appointments = Appointment.objects.all().order_by("-date")[:5]
 
     context = {
+        "total_livestock": livestock_qs.count(),
         "total_vaccinations": total_vaccinations,
-        "upcoming_vaccinations": upcoming_vaccinations,
-        "total_livestock": total_livestock,
-        "treatment": treatment
+        "total_treatments": total_treatments,
+        "total_appointments": total_appointments,
+        "livestock_list": livestock_list,
+        "recent_vaccinations": recent_vaccinations,
+        "recent_treatments": recent_treatments,
+        "recent_appointments": recent_appointments,
+        "total_cattle": next((x["total"] for x in livestock_counts if x["livestock_type"] == "cattle"), 0),
+        "total_sheep": next((x["total"] for x in livestock_counts if x["livestock_type"] == "sheep"), 0),
+        "total_goats": next((x["total"] for x in livestock_counts if x["livestock_type"] == "goat"), 0),
+        "total_poultry": next((x["total"] for x in livestock_counts if x["livestock_type"] == "poultry"), 0),
+        "total_other": next((x["total"] for x in livestock_counts if x["livestock_type"] == "other"), 0),
     }
 
     return render(request, "vet/vet_dashboard.html", context)
 
 
-
-from django.views.generic import ListView, CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
 
 class VetTreatmentListView(LoginRequiredMixin, ListView):
     model = Treatment
@@ -216,8 +529,8 @@ class VetTreatmentListView(LoginRequiredMixin, ListView):
 
 class VetTreatmentCreateView(LoginRequiredMixin, CreateView):
     model = Treatment
+    form_class = TreatmentForm  # Use the form from forms.py
     template_name = "vet/treatment_form.html"
-    fields = ["livestock", "treatment_date", "description", "medication", "cost"]
     success_url = reverse_lazy("vet_treatments")
 
     def form_valid(self, form):
@@ -225,31 +538,76 @@ class VetTreatmentCreateView(LoginRequiredMixin, CreateView):
         form.instance.vet = self.request.user
         return super().form_valid(form)
     
+class VetTreatmentUpdateView(LoginRequiredMixin, UpdateView):
+    model = Treatment
+    form_class = TreatmentForm
+    template_name = "vet/treatment_form.html"
+    success_url = reverse_lazy("vet_treatments")
+
+class VetTreatmentDeleteView(LoginRequiredMixin, DeleteView):
+    model = Treatment
+    template_name = "vet/treatment_confirm_delete.html"
+    success_url = reverse_lazy("vet_treatments")    
 
 
 @login_required
 def vaccination_list(request):
-    """Display all vaccinations"""
-    vaccinations = Vaccination.objects.select_related("livestock", "vet").order_by('-vaccination_date')
-    return render(request, "vet/vaccination_list.html", {"vaccinations": vaccinations})
+    user = request.user
 
+    # If admin or staff → show all vaccinations
+    if user.is_staff or user.role == "admin" or user.role == "staff":
+        vaccinations = Vaccination.objects.all()
 
-@login_required
-def vaccination_create(request, livestock_id=None):
-    """Create a vaccination record"""
-    livestock = None
-    if livestock_id:
-        livestock = get_object_or_404(Livestock, id=livestock_id)
+    # If vet → show vaccinations assigned to them
+    elif user.role == "vet":
+        vaccinations = Vaccination.objects.filter(vet=user)
 
-    if request.method == "POST":
-        form = VaccinationForm(request.POST)
-        if form.is_valid():
-            vaccination = form.save(commit=False)
-            vaccination.vet = request.user  # Assign the logged-in vet
-            vaccination.save()
-            messages.success(request, "Vaccination record added successfully.")
-            return redirect("vaccination_list")
+    # Otherwise, assume farmer → show vaccinations for farmer's livestock only
     else:
-        form = VaccinationForm(initial={"livestock": livestock})
+        vaccinations = Vaccination.objects.filter(livestock__farmer=user)
 
-    return render(request, "vet/vaccination_form.html", {"form": form})
+    # Show "Add Vaccination" button only for vet, admin, and staff
+    show_add_button = (
+        user.is_staff
+        or user.role == "vet"
+        or user.role == "admin"
+        or user.role == "staff"
+    )
+
+    return render(
+        request,
+        "vet/vaccination_list.html",
+        {
+            "vaccinations": vaccinations,
+            "show_add_button": show_add_button,
+        },
+    )
+
+class VaccinationCreateView(LoginRequiredMixin, CreateView):
+    model = Vaccination
+    form_class = VaccinationForm
+    template_name = "vet/vaccination_form.html"
+    success_url = reverse_lazy("vaccination_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user  # Pass logged-in user to form
+        return kwargs
+
+    def form_valid(self, form):
+        # Assign the logged-in vet automatically
+        form.instance.vet = self.request.user
+        return super().form_valid(form)
+   
+
+class VaccinationUpdateView(LoginRequiredMixin, UpdateView):
+    model = Vaccination
+    form_class = VaccinationForm
+    template_name = "vet/vaccination_form.html"
+    success_url = reverse_lazy("vaccination_list")
+
+class VaccinationDeleteView(LoginRequiredMixin, DeleteView):
+    model = Vaccination
+    template_name = "vet/vaccination_confirm_delete.html"
+    success_url = reverse_lazy("vaccination_list")
+

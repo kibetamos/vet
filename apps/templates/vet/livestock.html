@@ -7,11 +7,9 @@
     <div class="col-xl-12">
       <div class="card shadow">
         <div class="card-header border-0 d-flex justify-content-between align-items-center">
-          <h3 class="mb-0">My Livestock</h3>
+          <h3 class="mb-0">Livestock</h3>
           <!-- Add Livestock Button -->
-          <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addLivestockModal">
-            + Add Livestock
-          </button>
+          
         </div>
         <div class="table-responsive">
           <table class="table align-items-center table-flush">
@@ -23,7 +21,6 @@
                 <th scope="col">Date of Birth</th>
                 <th scope="col">Weight (kg)</th>
                 <th scope="col">Notes</th>
-                <th scope="col" class="text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -48,10 +45,7 @@
                     {% endif %}
                   </td>
                   <td>{{ animal.notes|default:"-" }}</td>
-                  <td class="text-center">
-                    <a href="{% url 'livestock_edit' animal.pk %}" class="btn btn-warning btn-sm">Edit</a>
-                    <a href="{% url 'livestock_delete' animal.pk %}" class="btn btn-danger btn-sm">Delete</a>
-                  </td>
+                  
                 </tr>
                 {% endfor %}
               {% else %}

@@ -1,0 +1,58 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-xl-12">
+      <div class="card shadow">
+        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Appointments</h3>
+
+          <!-- Add Appointment Button -->
+          <a href="{% url 'add_appointment' %}" class="btn btn-primary btn-sm">
+            + Add Appointment
+          </a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-items-center table-flush">
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">Farmer</th>
+                <th scope="col">Livestock</th>
+                <th scope="col">Vet</th>
+                <th scope="col">Date</th>
+                <th scope="col">Purpose</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if appointments %}
+                {% for a in appointments %}
+                <tr>
+                  <th scope="row">{{ a.farmer.username }}</th>
+                  <td>{{ a.livestock.name }}</td>
+                  <td>{{ a.vet.username }}</td>
+                  <td>{{ a.date|date:"Y-m-d H:i" }}</td>
+                  <td>{{ a.purpose }}</td>
+                  <td>{{ a.get_status_display }}</td>
+                  <td>
+                    <a href="{% url 'edit_appointment' a.id %}" class="btn btn-sm btn-warning">Edit</a>
+                    <a href="{% url 'delete_appointment' a.id %}" class="btn btn-sm btn-danger"
+                       onclick="return confirm('Are you sure you want to delete this appointment?');">Delete</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted">No appointments scheduled yet.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,13 +1,83 @@
-# -*- encoding: utf-8 -*-
-"""
-Copyright (c) 2019 - present AppSeed.us
-"""
+# # -*- encoding: utf-8 -*-
+# """
+# Copyright (c) 2019 - present AppSeed.us
+# """
 
-# Create your views here.
+# # Create your views here.
+# from django.shortcuts import render, redirect
+# from django.contrib.auth import authenticate, login
+# from .forms import LoginForm, SignUpForm
+
+
+# def login_view(request):
+#     form = LoginForm(request.POST or None)
+
+#     msg = None
+
+#     if request.method == "POST":
+
+#         if form.is_valid():
+#             username = form.cleaned_data.get("username")
+#             password = form.cleaned_data.get("password")
+#             user = authenticate(username=username, password=password)
+#             if user is not None:
+#                 login(request, user)
+#                 return redirect("/")
+#             else:
+#                 msg = 'Invalid credentials'
+#         else:
+#             msg = 'Error validating the form'
+
+#     return render(request, "accounts/login.html", {"form": form, "msg": msg})
+
+
+# def register_user(request):
+#     msg = None
+#     success = False
+
+#     if request.method == "POST":
+#         form = SignUpForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             username = form.cleaned_data.get("username")
+#             raw_password = form.cleaned_data.get("password1")
+#             user = authenticate(username=username, password=raw_password)
+
+#             msg = 'User created - please <a href="/login">login</a>.'
+#             success = True
+
+#             # return redirect("/login/")
+
+#         else:
+#             msg = 'Form is not valid'
+#     else:
+#         form = SignUpForm()
+
+#     return render(request, "accounts/register.html", {"form": form, "msg": msg, "success": success})
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
+from django.contrib import messages
 from .forms import LoginForm, SignUpForm
 
+# def login_view(request):
+#     form = LoginForm(request.POST or None)
+    
+#     if request.method == "POST":
+#         if form.is_valid():
+#             username = form.cleaned_data.get("username")
+#             password = form.cleaned_data.get("password")
+#             user = authenticate(request, username=username, password=password)
+            
+#             if user is not None:
+#                 login(request, user)
+#                 next_url = request.GET.get("next") or "/"
+#                 return redirect(next_url)
+#             else:
+#                 messages.error(request, "Invalid username or password")
+#         else:
+#             messages.error(request, "Please correct the errors below")
+
+#     return render(request, "accounts/login.html", {"form": form})
 
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -30,27 +100,38 @@ def login_view(request):
 
     return render(request, "accounts/login.html", {"form": form, "msg": msg})
 
-
 def register_user(request):
-    msg = None
-    success = False
-
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get("username")
-            raw_password = form.cleaned_data.get("password1")
-            user = authenticate(username=username, password=raw_password)
-
-            msg = 'User created - please <a href="/login">login</a>.'
-            success = True
-
-            # return redirect("/login/")
-
+            user = form.save()
+            messages.success(request, "Account created successfully! Please log in.")
+            return redirect("/login")
         else:
-            msg = 'Form is not valid'
+            messages.error(request, "Please correct the errors below")
     else:
         form = SignUpForm()
 
-    return render(request, "accounts/register.html", {"form": form, "msg": msg, "success": success})
+    return render(request, "accounts/register.html", {"form": form})
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .forms import ProfileForm
+from django.contrib import messages
+
+@login_required
+def profile_view(request):
+    user = request.user
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated successfully!")
+            return redirect('profile')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ProfileForm(instance=user)
+    
+    return render(request, "home/profile.html", {"form": form})

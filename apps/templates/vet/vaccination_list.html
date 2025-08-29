@@ -1,33 +1,58 @@
 {% extends 'layouts/base.html' %}
 {% block content %}
-<h2>Vaccination Records</h2>
-<a href="{% url 'vaccination_create' %}" class="btn btn-primary">Add Vaccination</a>
-<table class="table mt-3">
-    <thead>
-        <tr>
-            <th>Livestock</th>
-            <th>Vaccine Name</th>
-            <th>Date</th>
-            <th>Next Due</th>
-            <th>Vet</th>
-            <th>Notes</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for v in vaccinations %}
-        <tr>
-            <td>{{ v.livestock.name }}</td>
-            <td>{{ v.vaccine_name }}</td>
-            <td>{{ v.vaccination_date }}</td>
-            <td>{{ v.next_due_date|default:"-" }}</td>
-            <td>{{ v.vet.username }}</td>
-            <td>{{ v.notes|default:"-" }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6" class="text-center">No vaccinations recorded.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-xl-12">
+      <div class="card shadow">
+        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Vaccination Records</h3>
+          <!-- Add Vaccination Button -->
+          <a href="{% url 'add_vaccination' %}" class="btn btn-primary btn-sm">
+            + Add Vaccination
+          </a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-items-center table-flush">
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">Livestock</th>
+                <th scope="col">Vaccine</th>
+                <th scope="col">Date Administered</th>
+                <th scope="col">Next Due</th>
+                <th scope="col">Vet</th>
+                <th scope="col">Notes</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if vaccinations %}
+                {% for v in vaccinations %}
+                <tr>
+                  <th scope="row">{{ v.livestock.name }}</th>
+                  <td>{{ v.vaccine_name }}</td>
+                  <td>{{ v.date_administered|default:"N/A" }}</td>
+                  <td>{{ v.next_due_date|default:"N/A" }}</td>
+                  <td>{{ v.vet|default:"N/A" }}</td>
+                  <td>{{ v.notes|default:"-" }}</td>
+                  <td>
+                    <a href="{% url 'edit_vaccination' v.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                    <a href="{% url 'delete_vaccination' v.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted">
+                    No vaccination records found.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
