@@ -1,0 +1,60 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">📄 Farmer Reports</h2>
+
+  <!-- Filters -->
+  <form method="GET" class="mb-3">
+    <div class="row">
+      <div class="col-md-4">
+        <label>Livestock</label>
+<select class="form-control" name="livestock">
+  <option value="">All</option>
+  {% for animal in livestock %}
+    <option value="{{ animal.id }}" {% if request.GET.livestock == animal.id|stringformat:"s" %}selected{% endif %}>
+      {{ animal.name }} ({{ animal.livestock_type }})
+    </option>
+  {% endfor %}
+</select>
+
+      </div>
+
+      <div class="col-md-4">
+        <label>Date Range</label>
+<input type="date" name="from_date" class="form-control" value="{{ request.GET.from_date }}">
+<input type="date" name="to_date" class="form-control mt-2" value="{{ request.GET.to_date }}">
+
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Filter</button>
+<a href="?livestock={{ request.GET.livestock }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&download=pdf"
+   class="btn btn-success mt-3">
+   <i class="ni ni-cloud-download-95"></i> Download PDF
+</a>
+  </form>
+
+  <!-- Table -->
+  <h4 class="mt-4">Vaccinations</h4>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Livestock</th>
+        <th>Vaccine</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in vaccinations %}
+      <tr>
+        <td>{{ v.livestock.name }}</td>
+        <td>{{ v.vaccine_name }}</td>
+        <td>{{ v.vaccination_date }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="text-center">No vaccinations found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

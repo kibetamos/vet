@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">📊 Vet Appointments Report</h2>
+
+  <!-- Filters -->
+  <form method="GET" class="mb-3">
+    <div class="row">
+      <div class="col-md-4">
+        <label>Date Range</label>
+        <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        <input type="date" name="to_date" class="form-control mt-2" value="{{ to_date }}">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Filter</button>
+    <a href="?from_date={{ from_date }}&to_date={{ to_date }}&download=excel" class="btn btn-success mt-3">
+      <i class="ni ni-cloud-download-95"></i> Download Excel
+    </a>
+  </form>
+
+  <!-- Table -->
+  <h4 class="mt-4">Appointments</h4>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Farmer</th>
+        <th>Livestock</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for appt in appointments %}
+      <tr>
+        <td>{{ appt.date|date:"d M Y, H:i" }}</td>
+        <td>{{ appt.farmer.username }}</td>
+        <td>{{ appt.livestock.name }}</td>
+        <td>{{ appt.purpose }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">No appointments found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

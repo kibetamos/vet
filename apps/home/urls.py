@@ -48,5 +48,9 @@ urlpatterns = [
     path('vet/treatment/<int:pk>/delete/', views.VetTreatmentDeleteView.as_view(), name='delete_treatment'),
 
 
+    
+path("reports/farmer/", views.farmer_report, name="farmer_report"),
+    path("reports/vet/", views.vet_report, name="vet_report"),
+
     re_path(r'^.*\.*', views.pages, name='pages'),
 ]

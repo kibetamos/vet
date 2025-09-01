@@ -6,13 +6,15 @@
         <img src="/static/assets/img/brand/blue.png" class="navbar-brand-img" alt="Logo">
       </a>
     </div>
+
     <div class="navbar-inner">
       <!-- Collapse -->
       <div class="collapse navbar-collapse" id="sidenav-collapse-main">
+        
         <!-- Nav items -->
         <ul class="navbar-nav">
 
-          <!-- Common Dashboard Link -->
+          <!-- Dashboard -->
           <li class="nav-item">
             <a class="nav-link {% if 'index' in segment %} active {% endif %}" href="/">
               <i class="ni ni-tv-2 text-primary"></i>
@@ -20,7 +22,7 @@
             </a>
           </li>
 
-          <!-- ADMIN-SPECIFIC LINKS -->
+          <!-- ================= ADMIN LINKS ================= -->
           {% if request.user.role == "admin" %}
           <li class="nav-item">
             <a class="nav-link" href="/admin-dashboard/">
@@ -30,13 +32,13 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/tables.html">
-              <i class="ni ni-bullet-list-67 text-default"></i>
+              <i class="ni ni-bullet-list-67 text-info"></i>
               <span class="nav-link-text">User Management</span>
             </a>
           </li>
           {% endif %}
 
-          <!-- STAFF-SPECIFIC LINKS -->
+          <!-- ================= STAFF LINKS ================= -->
           {% if request.user.role == "staff" %}
           <li class="nav-item">
             <a class="nav-link" href="/appointments.html">
@@ -46,103 +48,122 @@
           </li>
           {% endif %}
 
-          <!-- FARMER-SPECIFIC LINKS -->
+          <!-- ================= FARMER LINKS ================= -->
           {% if request.user.role == "farmer" %}
           <li class="nav-item">
-            <!-- <a class="nav-link" href="/livestock.html"> -->
-              <a class="nav-link d-flex align-items-center" href="{% url 'livestock_list'%}"> 
-
-              <i class="ni ni-planet text-green"></i>
+            <a class="nav-link" href="{% url 'livestock_list' %}">
+              <i class="ni ni-collection text-green"></i>
               <span class="nav-link-text">My Livestock</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" href="{% url 'vaccination_list' %}">
-              <i class="ni ni-sound-wave text-primary me-2"></i>
-              <span>Vaccinations</span>
+            <a class="nav-link" href="{% url 'vaccination_list' %}">
+              <i class="ni ni-sound-wave text-primary"></i>
+              <span class="nav-link-text">Vaccinations</span>
             </a>
           </li>
-
-
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" href="{% url 'farmer_treatments' %}">
-              <i class="ni ni-sound-wave text-primary me-2"></i>
-              <span>Treatments</span>
-            </a>
-          </li>
- <!-- <a href="{% url 'farmer_treatments' %}" class="btn btn-sm btn-primary">See all</a> -->
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'appointments' %}">
-              <i class="ni ni-scissors text-purple"></i>
-              <span class="nav-link-text">Appointments</span>
-            </a>
-          </li>
-
-          {% endif %}
-
-          <!-- VET-SPECIFIC LINKS -->
-          {% if request.user.role == "vet" %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'vet_treatments' %}">
-              <i class="ni ni-scissors text-purple"></i>
+            <a class="nav-link" href="{% url 'farmer_treatments' %}">
+              <i class="ni ni-ambulance text-orange"></i>
               <span class="nav-link-text">Treatments</span>
             </a>
           </li>
-            <li class="nav-item">
-            <a class="nav-link" href="{% url 'vaccination_list' %}">
-              <i class="ni ni-scissors text-purple"></i>
-              <span class="nav-link-text">Vaccination</span>
-            </a>
-          </li>
-            <li class="nav-item">
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'appointments' %}">
-              <i class="ni ni-scissors text-purple"></i>
+              <i class="ni ni-calendar-grid-58 text-purple"></i>
               <span class="nav-link-text">Appointments</span>
             </a>
           </li>
-            <li class="nav-item">
-            <!-- <a class="nav-link" href="/livestock.html"> -->
-              <a class="nav-link d-flex align-items-center" href="{% url 'vet_livestock_list'%}"> 
+          <!-- <li class="nav-item">
+          <a class="nav-link" href="">
+            <i class="ni ni-archive-2 text-yellow"></i>
+            <span class="nav-link-text">Reports</span>
+          </a>
+        </li> -->
+          {% endif %}
 
-              <i class="ni ni-planet text-green"></i>
+          <!-- ================= VET LINKS ================= -->
+          {% if request.user.role == "vet" %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'vet_treatments' %}">
+              <i class="ni ni-ambulance text-danger"></i>
+              <span class="nav-link-text">Treatments</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'vaccination_list' %}">
+              <i class="ni ni-sound-wave text-primary"></i>
+              <span class="nav-link-text">Vaccinations</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'appointments' %}">
+              <i class="ni ni-calendar-grid-58 text-purple"></i>
+              <span class="nav-link-text">Appointments</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="">
+              <i class="ni ni-collection text-green"></i>
               <span class="nav-link-text">Livestock</span>
             </a>
           </li>
+          <!-- <li class="nav-item">
+            <a class="nav-link" href="{% url 'vet_report' %}">
+              <i class="ni ni-archive-2 text-yellow"></i>
+              <span class="nav-link-text">Download Reports</span>
+            </a>
+          </li> -->
           {% endif %}
 
-          <!-- PROFILE FOR ALL USERS -->
+          <!-- ================= PROFILE ================= -->
           <li class="nav-item">
             <a class="nav-link {% if 'profile' in segment %} active {% endif %}" href="/profile.html">
-              <i class="ni ni-single-02 text-yellow"></i>
+              <i class="ni ni-single-02 text-info"></i>
               <span class="nav-link-text">Profile</span>
             </a>
           </li>
 
-          <!-- LOGOUT -->
-          <li class="nav-item">
+          <!-- ================= LOGOUT ================= -->
+
+        </ul>
+
+        <!-- Divider -->
+        <hr class="my-3">
+
+        <h6 class="navbar-heading p-0 text-muted">
+          <span class="docs-normal">Resources</span>
+        </h6>
+        <ul class="navbar-nav">
+
+        <!-- Reports Section -->
+     {% if request.user.role == "vet" %}
+      <li class="nav-item">
+      <a class="nav-link" href="{% url 'vet_report' %}">
+        <i class="ni ni-archive-2 text-yellow"></i>
+        <span class="nav-link-text">Reports</span>
+      </a>
+    </li>
+      {% endif %}
+
+           {% if request.user.role == "farmer" %}
+      <li class="nav-item">
+      <a class="nav-link" href="{% url 'farmer_report' %}">
+        <i class="ni ni-archive-2 text-yellow"></i>
+        <span class="nav-link-text">Reports</span>
+      </a>
+    </li>
+      {% endif %}
+
+              <li class="nav-item">
             <a class="nav-link" href="{% url 'logout' %}">
               <i class="ni ni-user-run text-red"></i>
               <span class="nav-link-text">Logout</span>
             </a>
           </li>
 
-        </ul>
 
-        <!-- Divider -->
-        <hr class="my-3">
-        <h6 class="navbar-heading p-0 text-muted">
-          <span class="docs-normal">Resources</span>
-        </h6>
-
-        <!-- Example Resource Link -->
-        <ul class="navbar-nav mb-md-3">
-          <li class="nav-item">
-            <a class="nav-link" target="_blank" href="">
-              <i class="ni ni-archive-2"></i>
-              <span class="nav-link-text">Product Page</span>
-            </a>
-          </li>
-        </ul>
+    </ul>
 
       </div>
     </div>

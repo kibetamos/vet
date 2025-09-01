@@ -6,13 +6,26 @@
   <div class="row">
     <div class="col-xl-12">
       <div class="card shadow">
-        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+        <div class="card-header border-0 d-flex justify-content-between align-items-center flex-wrap">
           <h3 class="mb-0">My Livestock</h3>
+
+          <!-- Search Form -->
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Search livestock..."
+               value="{{ query|default:'' }}">
+        <button class="btn btn-primary" type="submit">Search</button>
+    </div>
+</form>
+
+
           <!-- Add Livestock Button -->
           <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addLivestockModal">
             + Add Livestock
           </button>
         </div>
+
+        <!-- Table -->
         <div class="table-responsive">
           <table class="table align-items-center table-flush">
             <thead class="thead-light">
