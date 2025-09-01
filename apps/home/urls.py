@@ -14,7 +14,7 @@ urlpatterns = [
 
 
     path('livestock/', views.livestock_list, name='livestock_list'),
-     path('vet_livestock/', views.vet_livestock_list, name='vet_livestock_list'),
+    path('vet_livestock/', views.vet_livestock_list, name='vet_livestock_list'),
     path('livestock/edit/<int:pk>/', views.livestock_edit, name='livestock_edit'),
     path('livestock/delete/<int:pk>/', views.livestock_delete, name='livestock_delete'),
  

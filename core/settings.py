@@ -1,8 +1,3 @@
-# -*- encoding: utf-8 -*-
-"""
-Copyright (c) 2019 - present AppSeed.us
-"""
-
 import os
 from decouple import config
 from unipath import Path
@@ -29,7 +24,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'apps.home'  
+    'apps.home',
+    'django_daraja',
+  
 ]
 
 MIDDLEWARE = [
@@ -126,3 +123,14 @@ STATICFILES_DIRS = (
 #############################################################
 #############################################################
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+# # Authentication settings
+# LOGIN_URL = 'home:login'  # points to your custom login
+# LOGIN_REDIRECT_URL = 'bands:home'  # after successful login
+# LOGOUT_REDIRECT_URL = 'home:login'  # after logout
+# MPESA Configuration
+
+
+

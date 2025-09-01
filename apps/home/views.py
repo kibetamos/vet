@@ -2,6 +2,7 @@
 from django.http import Http404, HttpResponseForbidden
 from django.contrib import messages
 from django.utils import timezone
+from django.http import HttpResponse, JsonResponse
 from django import template
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
