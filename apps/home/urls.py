@@ -43,7 +43,7 @@ urlpatterns = [
     # ✅ Catch-all for other HTML 
     
     path('vet/treatments/', views.VetTreatmentListView.as_view(), name='vet_treatments'),
-    path('vet/treatment/add/', views.VetTreatmentCreateView.as_view(), name='add_treatment'),
+    path('vet/treatment/add/', views.add_treatment, name='add_treatment'),
     path('vet/treatment/<int:pk>/edit/', views.VetTreatmentUpdateView.as_view(), name='edit_treatment'),
     path('vet/treatment/<int:pk>/delete/', views.VetTreatmentDeleteView.as_view(), name='delete_treatment'),
 
@@ -51,6 +51,12 @@ urlpatterns = [
     
     path("reports/farmer/", views.farmer_report, name="farmer_report"),
     path("reports/vet/", views.vet_report, name="vet_report"),
+
+    # path('daraja/', views.daraja_index, name='daraja'),
+    # path('daraja/stk-push', views.stk_push_callback, name='mpesa_stk_push_callback'),
+    path('daraja/stk-push/', views.mpesa_callback, name='mpesa_callback'),
+    # path('vet/treatment/add/', views.add_treatment, name='add_treatment'),
+
 
     re_path(r'^.*\.*', views.pages, name='pages'),
 ]

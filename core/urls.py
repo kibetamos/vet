@@ -20,4 +20,5 @@ urlpatterns = [
     path('', include('apps.authentication.urls')),   # Login & Register
     path('', include('apps.home.urls')),             # Home dashboard
     path('', include('django.contrib.auth.urls')),   # Default auth URLs
+    
 ]

@@ -62,10 +62,32 @@ class LivestockForm(forms.ModelForm):
         }
 
 
+# class TreatmentForm(forms.ModelForm):
+#     class Meta:
+#         model = Treatment
+#         fields = ["livestock", "treatment_date", "description", "medication", "cost"]
+#         widgets = {
+#             "treatment_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+#             "livestock": forms.Select(attrs={"class": "form-control"}),
+#             "description": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+#             "medication": forms.TextInput(attrs={"class": "form-control"}),
+#             "cost": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+#         }
+
 class TreatmentForm(forms.ModelForm):
+    # extra field only for MPESA
+    phone_number = forms.CharField(
+        max_length=12,
+        label="Farmer Phone Number",
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "e.g. 2547XXXXXXXX"
+        })
+    )
+
     class Meta:
         model = Treatment
-        fields = ["livestock", "treatment_date", "description", "medication", "cost"]
+        fields = ["livestock", "treatment_date", "description", "medication", "cost", "phone_number"]
         widgets = {
             "treatment_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "livestock": forms.Select(attrs={"class": "form-control"}),
@@ -73,5 +95,3 @@ class TreatmentForm(forms.ModelForm):
             "medication": forms.TextInput(attrs={"class": "form-control"}),
             "cost": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
         }
-
-

@@ -17,6 +17,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='farmer')
     user_picture = models.ImageField(upload_to=user_picture_path, null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True) 
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     
     def __str__(self):
         return self.username
@@ -73,6 +74,10 @@ class Appointment(models.Model):
 # ---------------------------------------------------------
 # Treatment Records
 # ---------------------------------------------------------
+
+from django.core.serializers.json import DjangoJSONEncoder
+
+
 class Treatment(models.Model):
     livestock = models.ForeignKey(Livestock, on_delete=models.CASCADE)
     vet = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'vet'})
@@ -80,10 +85,18 @@ class Treatment(models.Model):
     description = models.TextField()
     medication = models.CharField(max_length=200, blank=True, null=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    status = models.CharField(max_length=20, default='pending')
+
+    # MPESA fields
+    checkout_request_id = models.CharField(max_length=255, blank=True, null=True)
+    mpesa_receipt_number = models.CharField(max_length=50, blank=True, null=True)
+    mpesa_callback_body = models.JSONField(blank=True, null=True, encoder=DjangoJSONEncoder)
+    mpesa_phone_number = models.CharField(max_length=20, blank=True, null=True)
+    mpesa_transaction_date = models.CharField(max_length=20, blank=True, null=True)
+    mpesa_result_desc = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"Treatment for {self.livestock.name} on {self.treatment_date}"
-
 
 # ---------------------------------------------------------
 # Vaccination Records
